@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>오늘 어디 가지? · 국내 여행지 랜덤 추천</title>
+<style>
+  :root{
+    --bg:#f6f7f9;
+    --card:#ffffff;
+    --ink:#16181d;
+    --sub:#6b7280;
+    --line:#eceef1;
+    --point:#3b6ef5;
+    --point-soft:#eaf0ff;
+    --accent:#ff7a59;
+    --radius:18px;
+    --shadow:0 1px 2px rgba(16,24,40,.04), 0 12px 32px rgba(16,24,40,.08);
+    --shadow-sm:0 1px 2px rgba(16,24,40,.05), 0 4px 12px rgba(16,24,40,.06);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:'Apple SD Gothic Neo','Pretendard','Malgun Gothic',system-ui,-apple-system,sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:720px;margin:0 auto;padding:40px 20px 80px;}
+
+  header{text-align:center;margin-bottom:36px;}
+  header .badge{
+    display:inline-block;font-size:13px;font-weight:600;color:var(--point);
+    background:var(--point-soft);padding:6px 14px;border-radius:999px;margin-bottom:16px;
+    letter-spacing:.2px;
+  }
+  header h1{font-size:32px;font-weight:800;margin:0 0 8px;letter-spacing:-.5px;}
+  header p{margin:0;color:var(--sub);font-size:15px;}
+
+  .panel{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:24px;box-shadow:var(--shadow-sm);margin-bottom:24px;
+  }
+  .panel h2{font-size:14px;font-weight:700;color:var(--sub);margin:0 0 14px;letter-spacing:.3px;}
+
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px;}
+  .chip{
+    font-size:14px;font-weight:600;padding:9px 15px;border-radius:999px;cursor:pointer;
+    border:1.5px solid var(--line);background:#fff;color:var(--ink);transition:all .15s ease;user-select:none;
+  }
+  .chip:hover{border-color:#d7dbe0;}
+  .chip.on{background:var(--point);border-color:var(--point);color:#fff;}
+
+  .row{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+  .stepper{display:flex;align-items:center;gap:0;border:1.5px solid var(--line);border-radius:12px;overflow:hidden;}
+  .stepper button{
+    width:42px;height:42px;border:none;background:#fff;font-size:20px;cursor:pointer;color:var(--ink);
+    transition:background .15s;
+  }
+  .stepper button:hover{background:var(--bg);}
+  .stepper .val{width:48px;text-align:center;font-weight:700;font-size:16px;}
+  .field-label{font-size:14px;font-weight:600;}
+  .field-hint{font-size:12.5px;color:var(--sub);margin-top:2px;}
+
+  .go{
+    display:block;width:100%;margin-top:8px;padding:18px;border:none;border-radius:14px;cursor:pointer;
+    background:var(--point);color:#fff;font-size:17px;font-weight:800;letter-spacing:.2px;
+    box-shadow:0 8px 20px rgba(59,110,245,.28);transition:transform .12s ease, box-shadow .12s ease;
+  }
+  .go:hover{transform:translateY(-1px);box-shadow:0 12px 26px rgba(59,110,245,.34);}
+  .go:active{transform:translateY(0);}
+  .go:disabled{opacity:.6;cursor:not-allowed;transform:none;box-shadow:none;}
+
+  /* 슬롯머신 */
+  .slot{
+    text-align:center;padding:30px 20px;background:var(--card);border:1px solid var(--line);
+    border-radius:var(--radius);box-shadow:var(--shadow-sm);margin-bottom:24px;min-height:120px;
+    display:flex;align-items:center;justify-content:center;flex-direction:column;
+  }
+  .slot .emoji{font-size:48px;line-height:1;margin-bottom:8px;}
+  .slot .name{font-size:26px;font-weight:800;letter-spacing:-.5px;}
+  .slot .count{font-size:13px;color:var(--sub);margin-top:10px;}
+  .slot.rolling .name{color:var(--sub);}
+
+  /* 결과 카드 */
+  .result{animation:pop .35s ease;}
+  @keyframes pop{from{opacity:0;transform:translateY(10px) scale(.98);}to{opacity:1;transform:none;}}
+  .result .hero{
+    background:linear-gradient(135deg,var(--point) 0%,#5b8def 100%);
+    color:#fff;border-radius:var(--radius);padding:28px 26px;box-shadow:var(--shadow);margin-bottom:18px;
+  }
+  .result .hero .emoji{font-size:42px;}
+  .result .hero h3{font-size:28px;font-weight:800;margin:6px 0 4px;letter-spacing:-.5px;}
+  .result .hero .tagline{font-size:15px;opacity:.92;margin:0;}
+  .result .hero .tags{margin-top:14px;display:flex;flex-wrap:wrap;gap:6px;}
+  .result .hero .tags span{font-size:12.5px;font-weight:600;background:rgba(255,255,255,.18);padding:5px 11px;border-radius:999px;}
+
+  .sec{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:20px 22px;margin-bottom:14px;box-shadow:var(--shadow-sm);}
+  .sec h4{font-size:15px;font-weight:800;margin:0 0 12px;display:flex;align-items:center;gap:8px;}
+  .sec h4 .ic{font-size:18px;}
+
+  .links{display:flex;flex-wrap:wrap;gap:8px;}
+  .lk{
+    display:inline-flex;align-items:center;gap:6px;font-size:13.5px;font-weight:600;text-decoration:none;
+    color:var(--ink);background:var(--bg);border:1px solid var(--line);padding:9px 14px;border-radius:10px;
+    transition:all .15s;
+  }
+  .lk:hover{border-color:var(--point);color:var(--point);background:var(--point-soft);}
+  .lk.primary{background:var(--point-soft);border-color:#cfe0ff;color:var(--point);}
+
+  .spots{display:flex;flex-direction:column;gap:8px;}
+  .spot{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    padding:11px 14px;background:var(--bg);border-radius:12px;border:1px solid var(--line);
+  }
+  .spot .nm{font-size:14.5px;font-weight:600;}
+  .spot .desc{font-size:12.5px;color:var(--sub);}
+  .spot a{font-size:13px;font-weight:700;color:var(--point);text-decoration:none;white-space:nowrap;}
+  .spot a:hover{text-decoration:underline;}
+
+  .actions{display:flex;gap:10px;margin-top:20px;}
+  .actions button{
+    flex:1;padding:14px;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;transition:all .15s;
+  }
+  .btn-line{background:#fff;border:1.5px solid var(--line);color:var(--ink);}
+  .btn-line:hover{border-color:#d7dbe0;background:var(--bg);}
+  .btn-fill{background:var(--ink);border:1.5px solid var(--ink);color:#fff;}
+  .btn-fill:hover{opacity:.9;}
+
+  .toast{
+    position:fixed;left:50%;bottom:32px;transform:translateX(-50%) translateY(20px);
+    background:var(--ink);color:#fff;padding:12px 22px;border-radius:999px;font-size:14px;font-weight:600;
+    opacity:0;pointer-events:none;transition:all .25s ease;z-index:50;box-shadow:var(--shadow);
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  footer{text-align:center;color:var(--sub);font-size:12.5px;margin-top:40px;line-height:1.7;}
+
+  @media(max-width:480px){
+    header h1{font-size:26px;}
+    .wrap{padding:28px 16px 60px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <span class="badge">🇰🇷 국내 여행지 랜덤 추천</span>
+    <h1>오늘 어디 가지?</h1>
+    <p>조건만 고르면 AI가 후보를 추려, 운명이 한 곳을 정해줍니다.</p>
+  </header>
+
+  <!-- 설정 패널 -->
+  <div class="panel" id="setup">
+    <h2>1 · 어떤 여행이 좋아?</h2>
+    <div class="chips" id="moodChips"></div>
+
+    <h2 style="margin-top:8px;">2 · 언제 떠나?</h2>
+    <div class="chips" id="seasonChips"></div>
+
+    <div class="row" style="margin-top:6px;">
+      <div>
+        <div class="field-label">🎰 랜덤 추첨 횟수</div>
+        <div class="field-hint">슬롯이 이만큼 돌다가 멈춰요</div>
+      </div>
+      <div class="stepper">
+        <button type="button" onclick="changeRolls(-1)">−</button>
+        <div class="val" id="rollVal">5</div>
+        <button type="button" onclick="changeRolls(1)">+</button>
+      </div>
+    </div>
+  </div>
+
+  <button class="go" id="goBtn" onclick="start()">🎲 여행지 뽑기</button>
+
+  <!-- 슬롯머신 -->
+  <div class="slot" id="slot" style="display:none;">
+    <div class="emoji" id="slotEmoji">🧭</div>
+    <div class="name" id="slotName">준비 완료</div>
+    <div class="count" id="slotCount"></div>
+  </div>
+
+  <!-- 결과 -->
+  <div id="result"></div>
+
+  <footer>
+    숙박·식당·지도 링크는 네이버지도·야놀자·여기어때·에어비앤비 검색으로 연결됩니다.<br/>
+    파일 하나로 동작 — 친구들에게 이 파일을 그대로 공유하세요.
+  </footer>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ───────── 큐레이션된 국내 여행지 풀 ─────────
+   mood: 바다/산/도시/힐링/역사/액티비티 (복수 가능)
+   season: 추천 계절 (봄/여름/가을/겨울) — 다수면 사철
+   food: 식당 검색 키워드 / spots: 대표 놀거리(네이버지도 검색명)            */
+const PLACES = [
+  {emoji:"🌊",name:"강릉",moods:["바다","힐링"],seasons:["여름","가을","겨울"],
+   tagline:"커피향 가득한 동해의 도시. 경포대 일출과 안목해변 카페거리.",
+   food:"초당순두부", spots:["경포대","안목해변 카페거리","오죽헌"]},
+  {emoji:"⛰️",name:"속초",moods:["바다","산","액티비티"],seasons:["여름","가을"],
+   tagline:"설악산과 바다를 한번에. 청초호 산책과 대게·물회의 천국.",
+   food:"속초 물회", spots:["설악산 케이블카","속초중앙시장","영금정"]},
+  {emoji:"🏯",name:"경주",moods:["역사","힐링"],seasons:["봄","가을"],
+   tagline:"도시 전체가 박물관. 황리단길과 첨성대 야경이 일품.",
+   food:"경주 쌈밥", spots:["불국사","첨성대","황리단길","대릉원"]},
+  {emoji:"🍲",name:"전주",moods:["도시","역사","힐링"],seasons:["봄","가을","겨울"],
+   tagline:"한옥과 비빔밥의 고장. 골목마다 먹거리가 넘친다.",
+   food:"전주 비빔밥", spots:["전주한옥마을","경기전","남부시장"]},
+  {emoji:"🐟",name:"여수",moods:["바다","도시"],seasons:["봄","여름"],
+   tagline:"밤바다가 빛나는 항구도시. 케이블카에서 보는 야경이 환상.",
+   food:"여수 게장", spots:["여수 해상케이블카","오동도","돌산공원"]},
+  {emoji:"🌃",name:"부산",moods:["바다","도시","액티비티"],seasons:["봄","여름","가을"],
+   tagline:"바다·도심·시장 다 있는 만능 여행지. 해운대부터 감천까지.",
+   food:"부산 돼지국밥", spots:["해운대","감천문화마을","광안리","자갈치시장"]},
+  {emoji:"🌴",name:"제주",moods:["바다","산","힐링","액티비티"],seasons:["봄","여름","가을","겨울"],
+   tagline:"섬 전체가 여행지. 한라산·오름·해안도로 무엇을 골라도 좋다.",
+   food:"제주 흑돼지", spots:["성산일출봉","협재해변","한라산","우도"]},
+  {emoji:"⛵",name:"통영",moods:["바다","힐링"],seasons:["봄","가을"],
+   tagline:"한국의 나폴리. 동피랑 벽화마을과 케이블카, 그리고 굴.",
+   food:"통영 굴요리", spots:["동피랑마을","통영 케이블카","중앙시장","미륵산"]},
+  {emoji:"🏛️",name:"안동",moods:["역사","힐링"],seasons:["봄","가을"],
+   tagline:"고즈넉한 전통의 도시. 하회마을과 월영교 야경.",
+   food:"안동 찜닭", spots:["하회마을","월영교","부용대"]},
+  {emoji:"🚣",name:"춘천",moods:["힐링","도시","액티비티"],seasons:["봄","여름","가을"],
+   tagline:"호반의 도시. 남이섬과 레일바이크, 그리고 닭갈비.",
+   food:"춘천 닭갈비", spots:["남이섬","소양강스카이워크","김유정역"]},
+  {emoji:"🌲",name:"가평",moods:["산","힐링","액티비티"],seasons:["봄","여름","가을"],
+   tagline:"서울 근교 자연 휴양. 아침고요수목원과 자라섬.",
+   food:"가평 잣국수", spots:["아침고요수목원","쁘띠프랑스","자라섬"]},
+  {emoji:"🐉",name:"포항",moods:["바다","도시"],seasons:["겨울","봄"],
+   tagline:"호미곶 일출과 영일대 해상누각. 과메기와 물회의 본고장.",
+   food:"포항 물회", spots:["호미곶","영일대해수욕장","스페이스워크"]},
+  {emoji:"🚂",name:"군산",moods:["역사","도시","힐링"],seasons:["가을","겨울"],
+   tagline:"근대 시간여행. 경암동 철길마을과 오래된 빵집.",
+   food:"군산 짬뽕", spots:["경암동 철길마을","근대역사박물관","선유도"]},
+  {emoji:"🛥️",name:"거제",moods:["바다","액티비티","힐링"],seasons:["여름","가을"],
+   tagline:"에메랄드빛 남해. 바람의 언덕과 외도 보타니아.",
+   food:"거제 멍게비빔밥", spots:["바람의 언덕","외도 보타니아","매미성"]},
+  {emoji:"🌅",name:"남해",moods:["바다","힐링","산"],seasons:["봄","여름","가을"],
+   tagline:"다랭이논과 독일마을. 느린 시간이 흐르는 보물섬.",
+   food:"남해 멸치쌈밥", spots:["다랭이마을","독일마을","상주은모래비치"]},
+  {emoji:"🏖️",name:"안면도",moods:["바다","힐링"],seasons:["여름","가을"],
+   tagline:"서해 낙조 명소. 꽃지해변의 노을과 솔숲 캠핑.",
+   food:"태안 꽃게탕", spots:["꽃지해수욕장","안면도 쥬라기박물관","신두리 사구"]},
+  {emoji:"🛶",name:"단양",moods:["산","액티비티","힐링"],seasons:["봄","가을"],
+   tagline:"내륙의 절경. 도담삼봉과 만천하스카이워크.",
+   food:"단양 마늘솥밥", spots:["도담삼봉","만천하스카이워크","고수동굴"]},
+  {emoji:"🏔️",name:"평창",moods:["산","힐링","액티비티"],seasons:["겨울","가을"],
+   tagline:"고원의 청량함. 대관령 양떼목장과 겨울 설경.",
+   food:"평창 한우", spots:["대관령 양떼목장","오대산 월정사","발왕산 케이블카"]},
+  {emoji:"🏰",name:"강화도",moods:["역사","힐링","바다"],seasons:["봄","가을"],
+   tagline:"서울 근교 역사 섬. 마니산과 조용한 갯벌, 그리고 강화풍물시장.",
+   food:"강화 젓국갈비", spots:["마니산","고려궁지","강화풍물시장"]},
+  {emoji:"🍃",name:"담양",moods:["힐링","산"],seasons:["봄","여름","가을"],
+   tagline:"대나무의 고장. 죽녹원 숲길과 메타세쿼이아 가로수길.",
+   food:"담양 떡갈비", spots:["죽녹원","메타세쿼이아길","관방제림"]},
+];
+
+const MOODS  = ["바다","산","도시","힐링","역사","액티비티"];
+const SEASONS= ["봄","여름","가을","겨울"];
+
+let selMoods = new Set();
+let selSeason = null;
+let rolls = 5;
+let lastPicked = null;   // 직전 결과 (연속 중복 방지)
+
+/* ── UI 빌드 ── */
+function buildChips(){
+  const m = document.getElementById("moodChips");
+  MOODS.forEach(x=>{
+    const c=document.createElement("div");
+    c.className="chip"; c.textContent=x;
+    c.onclick=()=>{ c.classList.toggle("on");
+      c.classList.contains("on")?selMoods.add(x):selMoods.delete(x); };
+    m.appendChild(c);
+  });
+  const s = document.getElementById("seasonChips");
+  SEASONS.forEach(x=>{
+    const c=document.createElement("div");
+    c.className="chip"; c.textContent=x;
+    c.onclick=()=>{
+      const was=c.classList.contains("on");
+      [...s.children].forEach(e=>e.classList.remove("on"));
+      if(!was){ c.classList.add("on"); selSeason=x; } else { selSeason=null; }
+    };
+    s.appendChild(c);
+  });
+}
+buildChips();
+
+function changeRolls(d){
+  rolls=Math.max(1,Math.min(15,rolls+d));
+  document.getElementById("rollVal").textContent=rolls;
+}
+
+/* ── 조건에 맞는 후보 추리기 ── */
+function getCandidates(){
+  let pool = PLACES.filter(p=>{
+    const moodOk = selMoods.size===0 || [...selMoods].some(m=>p.moods.includes(m));
+    const seasonOk = !selSeason || p.seasons.includes(selSeason);
+    return moodOk && seasonOk;
+  });
+  // 직전 결과 제외 (후보가 2개 이상일 때만)
+  if(lastPicked && pool.length>1) pool = pool.filter(p=>p.name!==lastPicked);
+  return pool;
+}
+
+/* ── 검색 링크 ── */
+const enc = s=>encodeURIComponent(s);
+const naverMap = q=>`https://map.naver.com/p/search/${enc(q)}`;
+const links = p=>({
+  map:    naverMap(p.name),
+  yanolja:`https://www.yanolja.com/search/${enc(p.name)}`,
+  goodchoice:`https://www.goodchoice.kr/product/search/${enc(p.name)}`,
+  airbnb: `https://www.airbnb.co.kr/s/${enc(p.name)}/homes`,
+  food:   naverMap(`${p.name} ${p.food}`),
+  foodAll:naverMap(`${p.name} 맛집`),
+});
+
+/* ── 시작: 슬롯머신 → 결과 ── */
+let spinning=false;
+function start(){
+  if(spinning) return;
+  const cands=getCandidates();
+  if(cands.length===0){
+    toast("조건에 맞는 곳이 없어요. 필터를 줄여보세요 🙏");
+    return;
+  }
+  spinning=true;
+  const btn=document.getElementById("goBtn");
+  btn.disabled=true; btn.textContent="🎰 추첨 중...";
+  document.getElementById("result").innerHTML="";
+
+  const slot=document.getElementById("slot");
+  slot.style.display="flex"; slot.classList.add("rolling");
+
+  const final = cands[Math.floor(Math.random()*cands.length)];
+  let i=0;
+  const totalFlips = rolls*4;          // 매 추첨 사이 4번 깜빡
+  const eEmoji=document.getElementById("slotEmoji");
+  const eName =document.getElementById("slotName");
+  const eCount=document.getElementById("slotCount");
+
+  const tick=()=>{
+    const r = PLACES[Math.floor(Math.random()*PLACES.length)];
+    eEmoji.textContent=r.emoji; eName.textContent=r.name;
+    const cur=Math.min(rolls, Math.floor(i/4)+1);
+    eCount.textContent=`${cur} / ${rolls} 회`;
+    i++;
+    if(i<totalFlips){
+      // 점점 느려지는 가속 효과
+      const delay = 60 + Math.pow(i/totalFlips,3)*420;
+      setTimeout(tick, delay);
+    } else {
+      eEmoji.textContent=final.emoji; eName.textContent=final.name;
+      eCount.textContent=`${rolls} / ${rolls} 회 · 확정! 🎉`;
+      slot.classList.remove("rolling");
+      lastPicked=final.name;
+      setTimeout(()=>showResult(final), 350);
+      btn.disabled=false; btn.textContent="🎲 다시 뽑기"; spinning=false;
+    }
+  };
+  tick();
+}
+
+/* ── 결과 카드 ── */
+function showResult(p){
+  const L=links(p);
+  const spotsHtml = p.spots.map(s=>`
+    <div class="spot">
+      <div><div class="nm">${s}</div></div>
+      <a href="${naverMap(p.name+' '+s)}" target="_blank" rel="noopener">지도 ↗</a>
+    </div>`).join("");
+
+  document.getElementById("result").innerHTML=`
+    <div class="result">
+      <div class="hero">
+        <div class="emoji">${p.emoji}</div>
+        <h3>${p.name}</h3>
+        <p class="tagline">${p.tagline}</p>
+        <div class="tags">
+          ${p.moods.map(m=>`<span>#${m}</span>`).join("")}
+          ${p.seasons.map(s=>`<span>${s}</span>`).join("")}
+        </div>
+      </div>
+
+      <div class="sec">
+        <h4><span class="ic">📍</span> 위치 · 지도</h4>
+        <div class="links">
+          <a class="lk primary" href="${L.map}" target="_blank" rel="noopener">🗺️ ${p.name} 지도에서 보기</a>
+        </div>
+      </div>
+
+      <div class="sec">
+        <h4><span class="ic">🛏️</span> 숙박 예약</h4>
+        <div class="links">
+          <a class="lk" href="${L.yanolja}" target="_blank" rel="noopener">야놀자</a>
+          <a class="lk" href="${L.goodchoice}" target="_blank" rel="noopener">여기어때</a>
+          <a class="lk" href="${L.airbnb}" target="_blank" rel="noopener">에어비앤비</a>
+        </div>
+      </div>
+
+      <div class="sec">
+        <h4><span class="ic">🍴</span> 먹거리</h4>
+        <div class="links">
+          <a class="lk primary" href="${L.food}" target="_blank" rel="noopener">⭐ ${p.food} 맛집</a>
+          <a class="lk" href="${L.foodAll}" target="_blank" rel="noopener">${p.name} 맛집 전체</a>
+        </div>
+      </div>
+
+      <div class="sec">
+        <h4><span class="ic">🎡</span> 놀거리 · 명소</h4>
+        <div class="spots">${spotsHtml}</div>
+      </div>
+
+      <div class="actions">
+        <button class="btn-line" onclick="start()">🔄 다른 곳 뽑기</button>
+        <button class="btn-fill" onclick="share('${p.name}')">📋 결과 공유</button>
+      </div>
+    </div>`;
+  document.getElementById("result").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+/* ── 공유 (클립보드 복사) ── */
+function share(name){
+  const p=PLACES.find(x=>x.name===name); if(!p) return;
+  const text =
+`✈️ 이번 여행지는 「${p.name}」!
+${p.emoji} ${p.tagline}
+
+🗺️ 지도: ${links(p).map}
+🛏️ 숙박: ${links(p).yanolja}
+🍴 맛집(${p.food}): ${links(p).food}
+🎡 놀거리: ${p.spots.join(', ')}
+
+— '오늘 어디 가지?'에서 추첨됨`;
+  navigator.clipboard?.writeText(text).then(
+    ()=>toast("결과를 복사했어요! 친구들한테 붙여넣기 📋"),
+    ()=>toast("복사 실패 😢 직접 캡처해 주세요")
+  );
+}
+
+/* ── 토스트 ── */
+let toastTimer;
+function toast(msg){
+  const t=document.getElementById("toast");
+  t.textContent=msg; t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove("show"),2400);
+}
+</script>
+</body>
+</html>
